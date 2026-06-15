@@ -568,6 +568,8 @@ void proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGr
             singleproxy["udp"] = true;
         if(!tfo.is_undef())
             singleproxy["tfo"] = tfo.get();
+        if(!x.UnderlyingProxy.empty())
+            singleproxy["dialer-proxy"] = x.UnderlyingProxy;
         if(proxy_block)
             singleproxy.SetStyle(YAML::EmitterStyle::Block);
         else
@@ -966,7 +968,7 @@ std::string proxyToSurge(std::vector<Proxy> &nodes, const std::string &base_conf
             proxy += ", udp-relay=" + udp.get_str();
 
         if (underlying_proxy != "")
-            proxy += ", underlying-proxy=" + underlying_proxy;
+            proxy += ", dialer-proxy=" + underlying_proxy;
 
         if (ext.nodelist)
             output_nodelist += x.Remark + " = " + proxy + "\n";

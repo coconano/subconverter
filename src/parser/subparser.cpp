@@ -23,6 +23,14 @@ string_array ssr_ciphers = {"none", "table", "rc4", "rc4-md5", "aes-128-cfb", "a
 std::map<std::string, std::string> parsedMD5;
 std::string modSSMD5 = "f7653207090ce3389115e9c88541afe0";
 
+static std::string getDialerProxyArg(const std::string &link)
+{
+    std::string dialer_proxy = urlDecode(getUrlArg(link, "dialer-proxy"));
+    if(dialer_proxy.empty())
+        dialer_proxy = urlDecode(getUrlArg(link, "underlying-proxy"));
+    return dialer_proxy;
+}
+
 //remake from speedtestutil
 
 void commonConstruct(Proxy &node, ProxyType type, const std::string &group, const std::string &remarks, const std::string &server, const std::string &port, const tribool &udp, const tribool &tfo, const tribool &scv, const tribool &tls13,  const std::string& underlying_proxy)
@@ -765,7 +773,7 @@ void explodeSSRConf(std::string content, std::vector<Proxy> &nodes)
 
 void explodeSocks(std::string link, Proxy &node)
 {
-    std::string group, remarks, server, port, username, password;
+    std::string group, remarks, server, port, username, password, dialer_proxy;
     if(strFind(link, "socks://")) //v2rayn socks link
     {
         if(strFind(link, "#"))
@@ -801,6 +809,7 @@ void explodeSocks(std::string link, Proxy &node)
         password = urlDecode(getUrlArg(link, "pass"));
         remarks = urlDecode(getUrlArg(link, "remarks"));
         group = urlDecode(getUrlArg(link, "group"));
+        dialer_proxy = getDialerProxyArg(link);
     }
     if(group.empty())
         group = SOCKS_DEFAULT_GROUP;
@@ -809,18 +818,19 @@ void explodeSocks(std::string link, Proxy &node)
     if(port == "0")
         return;
 
-    socksConstruct(node, group, remarks, server, port, username, password);
+    socksConstruct(node, group, remarks, server, port, username, password, tribool(), tribool(), tribool(), dialer_proxy);
 }
 
 void explodeHTTP(const std::string &link, Proxy &node)
 {
-    std::string group, remarks, server, port, username, password;
+    std::string group, remarks, server, port, username, password, dialer_proxy;
     server = getUrlArg(link, "server");
     port = getUrlArg(link, "port");
     username = urlDecode(getUrlArg(link, "user"));
     password = urlDecode(getUrlArg(link, "pass"));
     remarks = urlDecode(getUrlArg(link, "remarks"));
     group = urlDecode(getUrlArg(link, "group"));
+    dialer_proxy = getDialerProxyArg(link);
 
     if(group.empty())
         group = HTTP_DEFAULT_GROUP;
@@ -829,7 +839,7 @@ void explodeHTTP(const std::string &link, Proxy &node)
     if(port == "0")
         return;
 
-    httpConstruct(node, group, remarks, server, port, username, password, strFind(link, "/https"));
+    httpConstruct(node, group, remarks, server, port, username, password, strFind(link, "/https"), tribool(), tribool(), tribool(), dialer_proxy);
 }
 
 void explodeHTTPSub(std::string link, Proxy &node)
@@ -1114,7 +1124,9 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes)
         singleproxy["name"] >>= ps;
         singleproxy["server"] >>= server;
         singleproxy["port"] >>= port;
-        singleproxy["underlying-proxy"] >>= underlying_proxy;
+        singleproxy["dialer-proxy"] >>= underlying_proxy;
+        if(underlying_proxy.empty())
+            singleproxy["underlying-proxy"] >>= underlying_proxy;
         if(port.empty() || port == "0")
             continue;
         udp = safe_as<std::string>(singleproxy["udp"]);
