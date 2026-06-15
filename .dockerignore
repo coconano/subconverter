@@ -1,0 +1,8 @@
+.git
+.github
+**/CMakeFiles
+**/cmake-build-*
+subconverter
+tmp
+*.tar.gz
+*.7z
